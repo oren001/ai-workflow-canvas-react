@@ -2,7 +2,6 @@ import React, { useState, useRef, useCallback } from 'react';
 import { Stage, Layer } from 'react-konva';
 import Konva from 'konva';
 import WorkflowNode from './WorkflowNode';
-import Connection from './Connection';
 
 interface Node {
   id: string;
@@ -92,59 +91,6 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
     });
   };
 
-  // Get connection points between two nodes with bezier curve control points
-  const getConnectionPoints = (fromNode: Node, toNode: Node) => {
-    const fromX = fromNode.x + 75; // Half of node width
-    const fromY = fromNode.y + 40; // Half of node height
-    const toX = toNode.x + 75;
-    const toY = toNode.y + 40;
-
-    // Calculate control points for bezier curve
-    const dx = toX - fromX;
-    const dy = toY - fromY;
-    const distance = Math.sqrt(dx * dx + dy * dy);
-    
-    // Control point distance is proportional to the distance between nodes
-    const controlPointDistance = Math.min(distance * 0.5, 150);
-    
-    // Control points are placed at a fixed distance from each node
-    const controlPoint1X = fromX + controlPointDistance;
-    const controlPoint1Y = fromY;
-    const controlPoint2X = toX - controlPointDistance;
-    const controlPoint2Y = toY;
-
-    return [
-      fromX, fromY,
-      controlPoint1X, controlPoint1Y,
-      controlPoint2X, controlPoint2Y,
-      toX, toY
-    ];
-  };
-
-  // Render connections for a node
-  const renderConnections = useCallback((node: Node) => {
-    return node.connections.map(toId => {
-      const toNode = nodes.find(n => n.id === toId);
-      if (!toNode) return null;
-      
-      const isActive = toId.includes(':active');
-      const actualToId = isActive ? toId.split(':')[0] : toId;
-      
-      // Generate unique key based on both node positions and connection status
-      const key = `${node.id}-${actualToId}-${node.x}-${node.y}-${toNode.x}-${toNode.y}-${isActive}`;
-      
-      return (
-        <Connection
-          key={key}
-          points={getConnectionPoints(node, toNode)}
-          isActive={isActive}
-          color={node.color}
-          onClick={() => onConnect?.(node.id, '')}
-        />
-      );
-    });
-  }, [nodes, onConnect]);
-
   return (
     <Stage 
       width={width} 
@@ -161,9 +107,6 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
       ref={stageRef}
     >
       <Layer>
-        {/* Draw connections */}
-        {nodes.map(node => renderConnections(node))}
-
         {/* Draw nodes */}
         {nodes.map((node) => (
           <WorkflowNode
