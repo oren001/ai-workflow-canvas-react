@@ -108,11 +108,7 @@ const WorkflowNode: React.FC<WorkflowNodeProps> = ({
   const handleDragMove = useCallback((e: any) => {
     if (!isDraggable || !isDragging) return;
     e.cancelBubble = true;
-  }, [isDraggable, isDragging]);
 
-  const handleDragEnd = useCallback((e: any) => {
-    if (!isDraggable || !isDragging) return;
-    
     const stage = e.target.getStage();
     const pos = stage.getPointerPosition();
     if (!pos || !onDragEnd) return;
@@ -120,18 +116,29 @@ const WorkflowNode: React.FC<WorkflowNodeProps> = ({
     const dx = pos.x - dragStartPos.x;
     const dy = pos.y - dragStartPos.y;
 
-    if (Math.abs(dx) < 3 && Math.abs(dy) < 3) {
-      onClick?.();
-      setIsDragging(false);
-      return;
-    }
-
     const worldDx = dx / stage.scaleX();
     const worldDy = dy / stage.scaleY();
 
     onDragEnd(id, x + worldDx, y + worldDy);
+  }, [isDraggable, isDragging, dragStartPos, onDragEnd, id, x, y]);
+
+  const handleDragEnd = useCallback((e: any) => {
+    if (!isDraggable || !isDragging) return;
+    
+    const stage = e.target.getStage();
+    const pos = stage.getPointerPosition();
+    if (!pos) return;
+
+    const dx = pos.x - dragStartPos.x;
+    const dy = pos.y - dragStartPos.y;
+
+    // Only trigger click for very small movements
+    if (Math.abs(dx) < 3 && Math.abs(dy) < 3) {
+      onClick?.();
+    }
+    
     setIsDragging(false);
-  }, [isDraggable, isDragging, dragStartPos, onDragEnd, onClick, id, x, y]);
+  }, [isDraggable, isDragging, dragStartPos, onClick]);
 
   return (
     <Group
