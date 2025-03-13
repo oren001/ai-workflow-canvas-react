@@ -95,36 +95,38 @@ const WorkflowNode: React.FC<WorkflowNodeProps> = ({
     if (!isDraggable) return;
     e.cancelBubble = true;
     setIsDragging(true);
+    const stage = e.target.getStage();
+    const pos = stage.getPointerPosition();
+    if (pos) {
+      setDragStartPos({
+        x: pos.x,
+        y: pos.y
+      });
+    }
   }, [isDraggable]);
 
   const handleDragEnd = useCallback((e: any) => {
     if (!isDraggable || !isDragging) return;
     e.cancelBubble = true;
     
-    const node = e.target;
-    const stage = node.getStage();
-    const scale = stage.scaleX();
-    
-    // Get the new position in stage coordinates
-    const nodePos = node.position();
-    const absX = nodePos.x;
-    const absY = nodePos.y;
-    
-    // Convert to world coordinates
-    const worldX = absX;
-    const worldY = absY;
-    
-    if (Math.abs(worldX - x) < 3 && Math.abs(worldY - y) < 3) {
-      // If barely moved, treat as a click
+    const stage = e.target.getStage();
+    const pos = stage.getPointerPosition();
+    if (!pos) return;
+
+    const dx = pos.x - dragStartPos.x;
+    const dy = pos.y - dragStartPos.y;
+
+    if (Math.abs(dx) < 3 && Math.abs(dy) < 3) {
       onClick?.();
-      node.position({ x, y }); // Reset position
     } else if (onDragEnd) {
-      // Update position
-      onDragEnd(id, worldX, worldY);
+      const scale = stage.scaleX();
+      const worldDx = dx / scale;
+      const worldDy = dy / scale;
+      onDragEnd(id, x + worldDx, y + worldDy);
     }
     
     setIsDragging(false);
-  }, [isDraggable, isDragging, id, x, y, onClick, onDragEnd]);
+  }, [isDraggable, isDragging, dragStartPos, id, x, y, onClick, onDragEnd]);
 
   return (
     <Group
