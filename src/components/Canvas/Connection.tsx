@@ -14,7 +14,7 @@ const Connection: React.FC<ConnectionProps> = ({
   color = '#2D9CDB',
   onClick 
 }) => {
-  if (points.length < 4) return null;
+  if (points.length < 8) return null; // We need 8 points for a bezier curve
 
   return (
     <Line
@@ -29,6 +29,10 @@ const Connection: React.FC<ConnectionProps> = ({
       shadowOpacity={0.5}
       lineCap="round"
       lineJoin="round"
+      bezier={true} // Enable bezier curve rendering
+      tension={0.5} // Add some tension to make the curve smoother
+      perfectDrawEnabled={true} // Improve line rendering quality
+      listening={true} // Enable mouse events
     />
   );
 };
