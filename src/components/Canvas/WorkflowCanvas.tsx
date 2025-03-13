@@ -130,7 +130,7 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
             
             return (
               <Connection
-                key={`${node.id}-${actualToId}`}
+                key={`${node.id}-${actualToId}-${node.x}-${node.y}-${toNode.x}-${toNode.y}`}
                 points={getConnectionPoints(node, toNode)}
                 isActive={isActive}
                 color={node.color}
