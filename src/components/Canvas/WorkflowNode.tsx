@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Group, Rect, Text } from 'react-konva';
 
 interface WorkflowNodeProps {
@@ -66,14 +66,17 @@ const WorkflowNode: React.FC<WorkflowNodeProps> = ({
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
+  const [isButtonHovered, setIsButtonHovered] = useState(false);
+  const [isSettingsHovered, setIsSettingsHovered] = useState(false);
+  
   const style = getNodeStyle(type, isProcessing, color);
+  
   const fontSize = {
     title: Math.max(10, 14 * scale),
     output: Math.max(8, 12 * scale),
     role: Math.max(7, 10 * scale)
   };
 
-  // Format output text to prevent overlap
   const formatOutput = (text: string) => {
     if (!text) return '';
     const lines = text.split('\n');
@@ -88,55 +91,47 @@ const WorkflowNode: React.FC<WorkflowNodeProps> = ({
     return text;
   };
 
-  const handleDragStart = (e: any) => {
+  const handleDragStart = useCallback((e: any) => {
     if (!isDraggable) return;
-    
-    // Stop event from bubbling up to stage
     e.cancelBubble = true;
-    
     setIsDragging(true);
     const stage = e.target.getStage();
     const pos = stage.getPointerPosition();
-    if (!pos) return;
+    if (pos) {
+      setDragStartPos({
+        x: pos.x,
+        y: pos.y
+      });
+    }
+  }, [isDraggable]);
 
-    // Store the initial position in stage coordinates
-    setDragStartPos({
-      x: pos.x,
-      y: pos.y
-    });
-  };
-
-  const handleDragMove = (e: any) => {
+  const handleDragMove = useCallback((e: any) => {
     if (!isDraggable || !isDragging) return;
-    // Stop event from bubbling up to stage
     e.cancelBubble = true;
-  };
+  }, [isDraggable, isDragging]);
 
-  const handleDragEnd = (e: any) => {
+  const handleDragEnd = useCallback((e: any) => {
     if (!isDraggable || !isDragging) return;
     
     const stage = e.target.getStage();
     const pos = stage.getPointerPosition();
     if (!pos || !onDragEnd) return;
 
-    // Calculate distance moved in stage coordinates
     const dx = pos.x - dragStartPos.x;
     const dy = pos.y - dragStartPos.y;
 
-    // If barely moved, treat as a click
     if (Math.abs(dx) < 3 && Math.abs(dy) < 3) {
       onClick?.();
       setIsDragging(false);
       return;
     }
 
-    // Convert movement to world coordinates
     const worldDx = dx / stage.scaleX();
     const worldDy = dy / stage.scaleY();
 
     onDragEnd(id, x + worldDx, y + worldDy);
     setIsDragging(false);
-  };
+  }, [isDraggable, isDragging, dragStartPos, onDragEnd, onClick, id, x, y]);
 
   return (
     <Group
@@ -146,15 +141,15 @@ const WorkflowNode: React.FC<WorkflowNodeProps> = ({
       onDragStart={handleDragStart}
       onDragMove={handleDragMove}
       onDragEnd={handleDragEnd}
+      onClick={onClick}
     >
-      {/* Main node body */}
       <Rect
         width={150}
         height={80}
         {...style}
+        shadowEnabled={true}
       />
 
-      {/* Title */}
       <Text
         text={text}
         width={150}
@@ -162,59 +157,105 @@ const WorkflowNode: React.FC<WorkflowNodeProps> = ({
         align="center"
         verticalAlign="middle"
         fontSize={fontSize.title}
-        fill="#333333"
+        fontStyle="bold"
+        fill="#1a1a1a"
         y={5}
       />
 
-      {/* Role (if exists) */}
       {role && (
-        <Text
-          text={role}
-          width={150}
-          height={15}
-          align="center"
-          verticalAlign="middle"
-          fontSize={fontSize.role}
-          fill="#666666"
-          y={25}
-        />
+        <Group>
+          <Rect
+            width={100}
+            height={16}
+            x={25}
+            y={25}
+            fill={color || '#2D9CDB'}
+            opacity={0.1}
+            cornerRadius={8}
+          />
+          <Text
+            text={role}
+            width={100}
+            height={16}
+            x={25}
+            align="center"
+            verticalAlign="middle"
+            fontSize={fontSize.role}
+            fill={color || '#2D9CDB'}
+            y={25}
+          />
+        </Group>
       )}
 
-      {/* Output */}
+      {role === 'coordinator' && !output && (
+        <Group
+          x={35}
+          y={45}
+          onMouseEnter={() => setIsButtonHovered(true)}
+          onMouseLeave={() => setIsButtonHovered(false)}
+          onClick={(e) => {
+            e.cancelBubble = true;
+            onClick?.();
+          }}
+        >
+          <Rect
+            width={80}
+            height={24}
+            fill={isButtonHovered ? '#2D9CDB' : '#4dabdd'}
+            cornerRadius={12}
+            shadowColor="black"
+            shadowBlur={5}
+            shadowOpacity={0.2}
+            shadowOffsetY={2}
+          />
+          <Text
+            text="Add Topic"
+            width={80}
+            height={24}
+            align="center"
+            verticalAlign="middle"
+            fontSize={12}
+            fill="white"
+          />
+        </Group>
+      )}
+
       {output && (
         <Text
           text={formatOutput(output)}
-          width={150}
+          width={140}
           height={35}
+          x={5}
           align="center"
           verticalAlign="middle"
           fontSize={fontSize.output}
           fill="#333333"
-          y={40}
+          y={42}
         />
       )}
 
-      {/* Settings button */}
       {onSettingsClick && (
         <Group
-          x={130}
+          x={125}
           y={5}
+          onMouseEnter={() => setIsSettingsHovered(true)}
+          onMouseLeave={() => setIsSettingsHovered(false)}
           onClick={(e) => {
             e.cancelBubble = true;
             onSettingsClick();
           }}
         >
           <Rect
-            width={15}
-            height={15}
-            fill="#f0f0f0"
-            cornerRadius={3}
+            width={20}
+            height={20}
+            fill={isSettingsHovered ? '#e0e0e0' : '#f0f0f0'}
+            cornerRadius={4}
           />
           <Text
             text="⚙️"
-            width={15}
-            height={15}
-            fontSize={10}
+            width={20}
+            height={20}
+            fontSize={12}
             align="center"
             verticalAlign="middle"
           />
