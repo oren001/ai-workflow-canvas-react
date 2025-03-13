@@ -92,36 +92,71 @@ const WorkflowNode: React.FC<WorkflowNodeProps> = ({
   };
 
   const handleDragStart = useCallback((e: any) => {
-    if (!isDraggable) return;
+    console.log('=== Drag Start ===');
+    console.log('Node ID:', id);
+    console.log('Current position:', { x, y });
+    
+    if (!isDraggable) {
+      console.log('Node is not draggable');
+      return;
+    }
+    
     e.cancelBubble = true;
     setIsDragging(true);
+    
     const stage = e.target.getStage();
     const pos = stage.getPointerPosition();
+    
+    console.log('Stage scale:', stage.scaleX());
+    console.log('Pointer position:', pos);
+    
     if (pos) {
       setDragStartPos({
         x: pos.x,
         y: pos.y
       });
+      console.log('Set drag start position:', pos);
     }
-  }, [isDraggable]);
+  }, [isDraggable, id, x, y]);
 
   const handleDragEnd = useCallback((e: any) => {
-    if (!isDraggable || !isDragging) return;
+    console.log('=== Drag End ===');
+    console.log('Node ID:', id);
+    
+    if (!isDraggable || !isDragging) {
+      console.log('Node is not draggable or not dragging');
+      return;
+    }
+    
     e.cancelBubble = true;
     
     const stage = e.target.getStage();
     const pos = stage.getPointerPosition();
-    if (!pos) return;
+    
+    if (!pos) {
+      console.log('No pointer position available');
+      return;
+    }
 
     const dx = pos.x - dragStartPos.x;
     const dy = pos.y - dragStartPos.y;
 
+    console.log('Movement delta:', { dx, dy });
+    console.log('Stage scale:', stage.scaleX());
+    console.log('Start position:', dragStartPos);
+    console.log('End position:', pos);
+
     if (Math.abs(dx) < 3 && Math.abs(dy) < 3) {
+      console.log('Treating as click (movement too small)');
       onClick?.();
     } else if (onDragEnd) {
       const scale = stage.scaleX();
       const worldDx = dx / scale;
       const worldDy = dy / scale;
+      
+      console.log('World delta:', { worldDx, worldDy });
+      console.log('New position:', { x: x + worldDx, y: y + worldDy });
+      
       onDragEnd(id, x + worldDx, y + worldDy);
     }
     
